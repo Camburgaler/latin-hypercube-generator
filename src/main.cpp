@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Author: Cameron Chrobocinski
+Author: Cameron Chrobostd::cinski
 Date of Development: Summer 2019
 Purpose: Personal Project
 
@@ -15,175 +15,236 @@ integration, and was never meant to be viewed or used professionally.
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include "cxxopts.hpp"
+#include <string>
+#include <vector>
+#include <regex>
+#include <functional>
 
-using namespace std;
+std::vector<std::string> split(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> tokens;
+    size_t prev = 0, pos = 0;
 
-int main()
+    do {
+        pos = str.find(delimiter, prev); // get position of delimiter
+        if (pos == std::string::npos)
+            pos = str.length();
+        std::string token = str.substr(prev, pos-prev);
+
+        if (!token.empty()) 
+            tokens.push_back(token);
+        prev = pos + delimiter.length();
+    } while (pos < str.length() && prev < str.length());
+    return tokens;
+}
+
+std::pair<float, float> parseBounds(const std::string& input) {
+    auto bounds = split(input, ":");
+    std::cout << bounds.size() << std::endl;
+    if (bounds.size() != 2) 
+        throw std::invalid_argument("Invalid base-scale format, use lower:upper");
+
+    return {std::stof(bounds[0]), std::stof(bounds[1])};
+}
+
+std::vector<std::tuple<int, float, float>> parseOverrides(const std::string& input) {
+    std::vector<std::tuple<int, float, float>> result;
+    if (input.empty()) 
+        return result;
+
+    auto entries = split(input, ",");
+    for (const auto& entry : entries) {
+        auto parts = split(entry, ":");
+        if (parts.size() != 3) 
+            throw std::invalid_argument("Invalid scale override format, use dim:lower:upper");
+            
+        int dim = std::stoi(parts[0]);
+        float low = std::stof(parts[1]);
+        float high = std::stof(parts[2]);
+        result.emplace_back(dim, low, high);
+    }
+
+    return result;
+}
+
+std::string optionKeyFormatter(const std::string& key) {
+    if (key.size() > 0) {
+        return key.substr(0, 1) + "," + key;
+    } else {
+        throw std::invalid_argument("Invalid option name");
+    }
+}
+
+int main(int argc, char *argv[])
 {
-    int size, dim;  //both hold user input
+    const std::string OPTION_NUMBER = "number";
+    const std::string OPTION_DIMENSIONS = "dimensions";
+    const std::string OPTION_RANDOM = "random";
+    const std::string OPTION_BASE_SCALE = "base-scale";
+    const std::string OPTION_SCALES = "scales";
 
-    cout << "Number of points needed from this LHC simulation: ";
-    cin >> size;
-    cout << "Number of dimensions in the 'Hypercube': ";
-    cin >> dim;
+    const std::string RANDOM_TRUE = "true";
+    const std::string RANDOM_FALSE = "false";
+
+    cxxopts::Options options("lhc", "Latin Hypercube generator");
+
+    options.add_options()
+        (optionKeyFormatter(OPTION_NUMBER), "Number of points", cxxopts::value<int>()->default_value("1000"))
+        (optionKeyFormatter(OPTION_DIMENSIONS), "Number of dimensions", cxxopts::value<int>()->default_value("1"))
+        (optionKeyFormatter(OPTION_RANDOM), "Select randomness: '" + RANDOM_FALSE + "' = none, '" + RANDOM_TRUE + "' = all, or a comma-separated list of dimension indices", cxxopts::value<std::string>()->default_value("false"))
+        (optionKeyFormatter(OPTION_BASE_SCALE), "Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
+        (optionKeyFormatter(OPTION_SCALES), "Comma-separated dimension:lower:upper overrides", cxxopts::value<std::string>())
+        ("h,help", "Print help");
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
+
+    int num = result[OPTION_NUMBER].as<int>();
+    int dim = result[OPTION_DIMENSIONS].as<int>();
+    std::vector<std::string> random = split(result[OPTION_RANDOM].as<std::string>(), ",");
+    std::pair<float, float> baseScale = parseBounds(result[OPTION_BASE_SCALE].as<std::string>());
     
-    const int SIZE = size, DIMENSION = dim; //constants that hold user input
-    float ratio[DIMENSION]; //holds the scale of each dimension
-    float dimScale[DIMENSION][2];   //holds the lower and upper bounds of each dimension
-    char choice;    //holds user input
-    bool flop[DIMENSION];   //1 = dimension can use floating points, 0 = dimension uses integers only
-    bool valid;  //keeps track of do-while validity
-    
-    do{ //do-while sets dimensional values for "flop"
-        valid = true;
-        
-        cout << "Set random floating-point use for each dimension.\n" <<
-                "0. No dimensions add random floating point values < 1\n" <<
-                "1. All dimensions add random floating-point values < 1\n" <<
-                "2. Customize each dimension's individual use\n";
-        cin >> choice;
-        
-        switch(choice){
-            case '0':   //case 0 removes any randomness in the output
-                for(int i = 0; i < DIMENSION; i++){ //for loop sets all values of "flop" to 0
-                    flop[i] = 0;
-                }
-                break;
-            case '1':   //case 1 allows for randomness in output
-                for(int i = 0; i < DIMENSION; i++){ //for loop sets all values of "flop" to 1
-                    flop[i] = 1;
-                }
-                break;
-            case '2':   //case 2 allows the user to pick which dimensions don't allow for randomness in output
-                char choice2;
-                bool valid2;
-                do{ //do-while allows for individual customization of dimensional flop use
-                    valid2 = true;
-                    
-                    for(int i = 0; i < DIMENSION; i++){ //for loop asks for and sets "flop" values
-                        cout << "Allow dimension " << i + 1 << " to add random floating-point\n" <<
-                                "numbers < 1? 0 = NO, 1 = YES\n";
-                        cin >> choice2;
-                        
-                        switch(choice2){
-                            case '0':   //case 0 removes randomness in current dimension's output
-                                flop[i] = 0;
-                                break;
-                            case '1':   //case 1 allows for randomness in current dimension's output
-                                flop[i] = 1;
-                                break;
-                            default:    //default triggers while condition
-                                valid2 = false;
-                                break;
-                        }
-                    }
-                }while(!valid2);
-                break;
-            default:    //default triggers while condition
-                valid = false;
-                break;
+    const int NUMBER = num, DIMENSION = dim;    // constants that hold user input
+    float ratio[DIMENSION];                     // holds the scale of each dimension
+    float dimScale[DIMENSION][2];               // holds the lower and upper bounds of each dimension
+    char choice;                                // holds user input
+    bool flop[DIMENSION];                       // 1 = dimension can use floating points, 0 = dimension uses integers only
+    bool valid;                                 // keeps track of do-while validity
+
+    // input validation for randomization
+    if (random != std::vector<std::string>{RANDOM_TRUE} && random != std::vector<std::string>{RANDOM_FALSE}) {        
+        // input validation that there are not more dimensions identified for randomization than there are dimensions
+        if (random.size() > DIMENSION){
+            std::cout << "Invalid input. Too many dimensions randomized.\n";
+            valid = false;
         }
-    }while(!valid);
+
+        for (int i = 0; i < random.size(); i++){
+            int randomAsInt;
     
-    do{ //do-while sets scale of each dimension
-        valid = true;
-        
-        cout << "Alter scale of any dimension(s)?\n" <<
-                "0. No\n" <<
-                "1. Yes\n";
-        cin >> choice;
-        
-        switch(choice){
-            case '0':   //0 sets a 1:1 scale
-                for(int i = 0; i < DIMENSION; i++){
-                    dimScale[i][0] = 0;
-                    dimScale[i][1] = SIZE;
-                }
-                break;
-            case '1':   //1 allows the user to manually input bounds for each dimension
-                for(int i = 0; i < DIMENSION; i++){
-                    cout << "Lower bound of dimension " << i + 1 << ": ";
-                    cin >> dimScale[i][0];
-                    
-                    cout << "Upper bound of dimension " << i + 1 << ": ";
-                    cin >> dimScale[i][1];
-                }
-                break;
-            default:    //default repeats the process
+            // input validation that each dimension is an integer
+            try{
+                randomAsInt = std::stoi(random[i]);
+            }catch(std::invalid_argument& e){
+                std::cout << "Invalid input. Dimension " << random[i] << " is not an integer.\n";
                 valid = false;
-                break;
+            }
+
+            // input validation that there is no randomization for a dimension that does not exist
+            std::function <bool(std::string)> strGreaterThanDimensionsCount = [&](std::string s){return randomAsInt >= DIMENSION;};
+            if (strGreaterThanDimensionsCount(random[i])){
+                std::cout << "Invalid input. Dimension " << random[i] << " does not exist.\n";
+                valid = false;
+            }
+
+            // input validation that each dimension is unique
+            for (int j = 0; j < i; j++){
+                if (random[i] == random[j]){
+                    std::cout << "Invalid input. Dimension " << random[i] << " is duplicated.\n";
+                    valid = false;
+                }
+            }
         }
-    }while(!valid);
+    }
     
-    float points[SIZE][DIMENSION];  //stores coordinates
-    srand(time(NULL));  //seeds random generator
+    // set the base scale for each dimension
+    for (int i = 0; i < DIMENSION; ++i) {
+        dimScale[i][0] = baseScale.first;
+        dimScale[i][1] = baseScale.second;
+    }
+
+    // set the lower and upper bounds for each customized dimension
+    if (result.count(OPTION_SCALES)) {
+        for (const auto& [dim, low, high] : parseOverrides(result[OPTION_SCALES].as<std::string>())) {
+            // input validation that the dimension index is valid
+            if (dim < 0 || dim >= DIMENSION) {
+                std::cerr << "Invalid dimension index in --scale: " << dim << "\n";
+                return 1;
+            }
+
+            // set the lower and upper bounds
+            dimScale[dim][0] = low;
+            dimScale[dim][1] = high;
+        }
+    }
     
-    for(int j = 0; j < DIMENSION; j++){ //for loop populates points array
-        int range[SIZE];    //"range" is the range of values 0 to SIZE
+    float points[NUMBER][DIMENSION];    //stores coordinates
+    srand(time(NULL));                  //seeds random generator
+    
+    // for loop populates points array
+    for(int j = 0; j < DIMENSION; j++){
+        // the range of values 0 to SIZE 
+        int range[NUMBER];    
+        
         //the formula in the following statement is as follows:
         //possible range of values / SIZE
-        ratio[j] = (dimScale[j][1] - dimScale[j][0]) / static_cast<float>(SIZE);
+        ratio[j] = (dimScale[j][1] - dimScale[j][0]) / static_cast<float>(NUMBER);
         
-        for(int k = 0; k < SIZE; k++){  //for loop populates range array
+        // for loop populates range array
+        for(int k = 0; k < NUMBER; k++){  
             range[k] = k;
         }
         
-        for(int i = 0; i < SIZE; i++){  //for loop generates random unique selection from range
-            int temp = rand() % SIZE;   //temporary var to generate random index in range
+        // for loop generates random unique selection from range
+        for(int i = 0; i < NUMBER; i++){  
+            // temporary var to generate random index in range
+            int temp = rand() % NUMBER;   
             float decimal = ((rand() % 100) / (100.0 * (1 / ratio[j]))) * static_cast<float>(flop[j]); //holds random addition to value
             
-            while(range[temp] == -1){   //while loop ensures unique selection
-                temp = rand() % SIZE;
+            // while loop ensures unique selection
+            while(range[temp] == -1){   
+                temp = rand() % NUMBER;
             }
             
             
-            points[i][j] = range[temp] + decimal;    //assigns current index of "points" the value of "range[temp]" plus a random decimal value
-            points[i][j] *= ratio[j];   //adjust value of "points" for range of possible values
-            points[i][j] += dimScale[j][0];     //adjust value of "points" for starting point of possible values
-            range[temp] = -1;   //selected index is marked as selected
+            points[i][j] = range[temp] + decimal;   // assigns current index of "points" the value of "range[temp]" plus a random decimal value
+            points[i][j] *= ratio[j];               // adjust value of "points" for range of possible values
+            points[i][j] += dimScale[j][0];         // adjust value of "points" for starting point of possible values
+            range[temp] = -1;                       // selected index is marked as selected
         }
     }
     
-    cout << "\nCoordinates\n" <<
+    std::cout << "\nCoordinates\n" <<
               "-----------\n";
     
-    for(int i = 0; i < SIZE; i++){  //for loop prints coordinates
+    // for loop prints coordinates
+    for(int i = 0; i < NUMBER; i++){  
         for(int j = 0; j < DIMENSION; j++){
-            //the following line is legacy code, left behind for reference
-            //cout << points[i][j] * ratio[j] + dimScale[j][0] << " ";
-            cout << points[i][j] << " ";
+            std::cout << points[i][j] << " ";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
     
     for(int i = 0; i < DIMENSION; i++){
-        float mean = 0;  //"mean" holds average of a given dimension
-        float variance = 0;   //"variance" holds the variance thereof
-        float stdDev = 0; //"stdDev" holds the standard deviation thereof
+        float mean = 0;     // "mean" holds average of a given dimension
+        float variance = 0; // "variance" holds the variance thereof
+        float stdDev = 0;   // "stdDev" holds the standard deviation thereof
         
-        cout << "\nAnalysis of dimension " << i + 1 << endl <<
+        std::cout << "\nAnalysis of dimension " << i + 1 << std::endl <<
                 "-----------------------\n";
         
-        for(int j = 0; j < SIZE; j++){  //for loop adds all values of a dimension to "mean" var
+        // for loop adds all values of a dimension to "mean" var
+        for(int j = 0; j < NUMBER; j++){  
             mean += points[j][i];
         }
-        mean /= SIZE;   //divides value of "mean" by SIZE
-        cout << "Mean: " << mean << endl;
+        mean /= NUMBER; // divides value of "mean" by SIZE
+        std::cout << "Mean: " << mean << std::endl;
         
-        for(int j = 0; j < SIZE; j++){  //for loop adds the value of (value-of-current-dimensional-index - mean) for each value in a dimension
+        // for loop adds the value of (value-of-current-dimensional-index - mean) for each value in a dimension
+        for(int j = 0; j < NUMBER; j++){  
             variance += points[j][i] - mean;
         }
-        variance *= variance;   //squares value of "variance"
-        variance /= SIZE - 1;    //divides value of "variance" by SIZE - 1 (I'm using the sample variance formula here)
-        cout << "Variance: " << variance << endl;
+        variance *= variance;   // squares value of "variance"
+        variance /= NUMBER - 1; // divides value of "variance" by SIZE - 1 (I'm using the sample variance formula here)
+        std::cout << "Variance: " << variance << std::endl;
         
-        stdDev = sqrt(variance);    //gives "stdDev" the value of the squared root of "variance"
-        cout << "Standard Deviation: " << stdDev << endl;
+        stdDev = sqrt(variance);    // gives "stdDev" the value of the squared root of "variance"
+        std::cout << "Standard Deviation: " << stdDev << std::endl;
     }
 
     return 0;
 }
-
-
-
-
