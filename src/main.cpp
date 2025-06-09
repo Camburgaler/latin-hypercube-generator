@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Author: Cameron Chrobostd::cinski
+Author: Cameron Chrobocinski
 Date of Development: Summer 2019
 Purpose: Personal Project
 
@@ -8,6 +8,11 @@ I developed this code while working on a project for TechSource Inc. that
 required me to research Monte Carlo integration. The purpose of this code was to
 help me get a better understanding of the processes necessary for Monte Carlo
 integration, and was never meant to be viewed or used professionally.
+
+Date: Summer 2025
+
+Updated code to convert cin to cxxopts.
+Added functionality to output to CSV.
 
 *******************************************************************************/
 
@@ -20,6 +25,7 @@ integration, and was never meant to be viewed or used professionally.
 #include <vector>
 #include <regex>
 #include <functional>
+#include <fstream>
 
 std::vector<std::string> split(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> tokens;
@@ -75,25 +81,61 @@ std::string optionKeyFormatter(const std::string& key) {
     }
 }
 
+std::string sanitizeHeader(const std::string& header) {
+    std::string sanitized;
+    for (char c : header) {
+        if (std::isalnum(c) || c == '_' || c == ' ') {
+            sanitized += c;
+        }
+    }
+    return sanitized;
+}
+
+std::vector<std::string> escapeHeadings(const std::vector<std::string> headings) {
+    std::vector<std::string> escaped = headings;
+    for (int i = 0; i < headings.size(); i++) {
+        std::string h = headings[i];
+        if (h.find_first_of(",\"\n\r") != std::string::npos) {
+            std::string escapedHeading = h;
+            std::string quoted = "\"";
+            for (char c : escapedHeading) {
+                if (c == '"') quoted += "\"\"";
+                else quoted += c;
+            }
+            quoted += "\"";
+            escaped[i] = quoted;
+        }
+    }
+    return escaped;
+}
+
 int main(int argc, char *argv[])
 {
+    // letters used: h, n, d, r, b, s, f, o, c
     const std::string OPTION_NUMBER = "number";
     const std::string OPTION_DIMENSIONS = "dimensions";
     const std::string OPTION_RANDOM = "random";
     const std::string OPTION_BASE_SCALE = "base-scale";
     const std::string OPTION_SCALES = "scales";
+    const std::string OPTION_FILE_OUTPUT = "file-output";
+    const std::string OPTION_OUT_PATH = "out-path";
+    const std::string OPTION_HEADINGS = "column-headings";
 
     const std::string RANDOM_TRUE = "true";
     const std::string RANDOM_FALSE = "false";
+    const std::string OUT_PATH_DEFAULT = "lhc.csv";
 
     cxxopts::Options options("lhc", "Latin Hypercube generator");
 
     options.add_options()
-        (optionKeyFormatter(OPTION_NUMBER), "Number of points", cxxopts::value<int>()->default_value("1000"))
-        (optionKeyFormatter(OPTION_DIMENSIONS), "Number of dimensions", cxxopts::value<int>()->default_value("1"))
-        (optionKeyFormatter(OPTION_RANDOM), "Select randomness: '" + RANDOM_FALSE + "' = none, '" + RANDOM_TRUE + "' = all, or a comma-separated list of dimension indices", cxxopts::value<std::string>()->default_value("false"))
-        (optionKeyFormatter(OPTION_BASE_SCALE), "Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
-        (optionKeyFormatter(OPTION_SCALES), "Comma-separated dimension:lower:upper overrides", cxxopts::value<std::string>())
+        (optionKeyFormatter(OPTION_NUMBER), "Required. Number of points", cxxopts::value<int>()->default_value("1000"))
+        (optionKeyFormatter(OPTION_DIMENSIONS), "Required. Number of dimensions", cxxopts::value<int>()->default_value("1"))
+        (optionKeyFormatter(OPTION_RANDOM), "Optional. Select randomness: '" + RANDOM_FALSE + "' = none, '" + RANDOM_TRUE + "' = all, or a comma-separated list of dimension indices", cxxopts::value<std::string>()->default_value("false"))
+        (optionKeyFormatter(OPTION_BASE_SCALE), "Optional. Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
+        (optionKeyFormatter(OPTION_SCALES), "Optional. Comma-separated dimension:lower:upper overrides", cxxopts::value<std::string>())
+        (optionKeyFormatter(OPTION_FILE_OUTPUT), "Optional. Flag to toggle CSV file output", cxxopts::value<bool>())
+        (optionKeyFormatter(OPTION_OUT_PATH), "Optional. File path for CSV output", cxxopts::value<std::string>()->default_value("lhc.csv"))
+        (optionKeyFormatter(OPTION_HEADINGS), "Optional. Column names for CSV output (only alphanumeric and underscore characters)", cxxopts::value<std::string>())
         ("h,help", "Print help");
 
     auto result = options.parse(argc, argv);
@@ -101,6 +143,11 @@ int main(int argc, char *argv[])
     if (result.count("help")) {
         std::cout << options.help() << std::endl;
         return 0;
+    }
+
+    if (result.count(OPTION_NUMBER) == 0 || result.count(OPTION_DIMENSIONS) == 0) {
+        std::cout << "Missing required arguments" << std::endl;
+        return 1;
     }
 
     int num = result[OPTION_NUMBER].as<int>();
@@ -147,6 +194,43 @@ int main(int argc, char *argv[])
                     std::cout << "Invalid input. Dimension " << random[i] << " is duplicated.\n";
                     valid = false;
                 }
+            }
+        }
+    }
+
+    // input validation for file output
+    std::ofstream out;
+    std::vector<std::string> headings;
+    if (result.count(OPTION_FILE_OUTPUT)) {
+        std::string outDir = OUT_PATH_DEFAULT;
+        if (result.count(OPTION_OUT_PATH)) {
+            outDir = result[OPTION_OUT_PATH].as<std::string>();
+        }
+
+        // input validation that the file path is valid
+        try {
+            out.open(outDir, std::ios::out | std::ios::trunc);
+        } catch (std::ofstream::failure& e) {
+            std::cerr << "Unable to open file: " << result[OPTION_OUT_PATH].as<std::string>() << "\n";
+            return 1;
+        }
+
+        // input validation that the file path is writable
+        if (!out.is_open()) {
+            std::cerr << "Unable to write to file: " << result[OPTION_OUT_PATH].as<std::string>() << "\n";
+            return 1;
+        }
+
+        // input validation for the headings
+        if (result.count(OPTION_HEADINGS)) {
+            headings = escapeHeadings(split(sanitizeHeader(result[OPTION_HEADINGS].as<std::string>()), ","));
+            if (headings.size() != DIMENSION) {
+                std::cerr << "Invalid number of headings.\n";
+                return 1;
+            }
+        } else {
+            for (int i = 0; i < DIMENSION; ++i) {
+                headings.push_back("dim" + std::to_string(i));
             }
         }
     }
@@ -244,6 +328,24 @@ int main(int argc, char *argv[])
         
         stdDev = sqrt(variance);    // gives "stdDev" the value of the squared root of "variance"
         std::cout << "Standard Deviation: " << stdDev << std::endl;
+    }
+
+    // export headings and data to csv
+    if (result.count(OPTION_FILE_OUTPUT)) {
+        std::cout << "Writing to " << result[OPTION_OUT_PATH].as<std::string>() << std::endl;
+        for (const std::string h : headings) {
+            out << h << ",";
+        }
+        out << std::endl;
+        for (int i = 0; i < NUMBER; i++) {
+            for (int j = 0; j < DIMENSION; j++) {
+                out << points[i][j];
+                if (j < DIMENSION - 1) {
+                    out << ",";
+                }
+            }
+            out << std::endl;
+        }
     }
 
     return 0;

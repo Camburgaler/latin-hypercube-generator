@@ -9,6 +9,7 @@ An excerpt from the [Wikipedia article on latin hypercube sampling](https://en.w
 -   Generates LHC samples for arbitrary dimensions
 -   Configurable range and floating-point inclusion
 -   Basic statistical analysis (mean, variance, std. dev)
+-   Export data to CSV
 
 ## Compilation
 
@@ -21,15 +22,21 @@ g++ -I include -g -o lhc src/main.cpp
 ```bash
   lhc [OPTION...]
 
-  -n, --number arg      Number of points (default: 1000)
-  -d, --dimensions arg  Number of dimensions (default: 1)
-  -r, --random arg      Select randomness: 'false' = none, 'true' = all, or
-                        a comma-separated list of dimension indices
-                        (default: false)
-  -b, --base-scale arg  Default scale for all dimensions in the form
-                        lower:upper (default: 0:1)
-  -s, --scales arg      Comma-separated dimension:lower:upper overrides
-  -h, --help            Print help
+  -n, --number arg           Required. Number of points (default: 1000)
+  -d, --dimensions arg       Required. Number of dimensions (default: 1)
+  -r, --random arg           Optional. Select randomness: 'false' = none,
+                             'true' = all, or a comma-separated list of
+                             dimension indices (default: false)
+  -b, --base-scale arg       Optional. Default scale for all dimensions in
+                             the form lower:upper (default: 0:1)
+  -s, --scales arg           Optional. Comma-separated
+                             dimension:lower:upper overrides
+  -f, --file-output          Optional. Flag to toggle CSV file output
+  -o, --out-path arg         Optional. File path for CSV output (default:
+                             lhc.csv)
+  -c, --column-headings arg  Optional. Column names for CSV output (only
+                             alphanumeric and underscore characters)
+  -h, --help                 Print help
 ```
 
 ## Example Output
@@ -92,7 +99,6 @@ Standard Deviation: 0.012241
 
 ## Planned Improvements
 
--   Export data to CSV.
 -   Add customization option for the amount of random variance.
 
 ## Credits
