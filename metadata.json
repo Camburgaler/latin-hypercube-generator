@@ -1,0 +1,4 @@
+{
+    "app_name": "CLI Latin Hypercube Point Sampler",
+    "description": "An excerpt from the [Wikipedia article on latin hypercube sampling](https://en.wikipedia.org/wiki/Latin_hypercube_sampling#cite_note-C3M-1): \"Latin hypercube sampling (LHS) is a statistical method for generating a near-random sample of parameter values from a multidimensional distribution. The sampling method is often used to construct computer experiments or for Monte Carlo integration.\" This project was written during a summer internship that I did for TechSource, Inc., an LANL-adjacent company in Los Alamos, New Mexico. I needed to better understand Monte Carlo integration, and this helped to facilitate that. I plan to bring this to a more accessible format at some point."
+}
