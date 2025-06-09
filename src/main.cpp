@@ -334,7 +334,10 @@ int main(int argc, char *argv[])
     if (result.count(OPTION_FILE_OUTPUT)) {
         std::cout << "Writing to " << result[OPTION_OUT_PATH].as<std::string>() << std::endl;
         for (const std::string h : headings) {
-            out << h << ",";
+            out << h;
+            if (h != headings.back()) {
+                out << ",";
+            }
         }
         out << std::endl;
         for (int i = 0; i < NUMBER; i++) {
