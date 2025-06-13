@@ -81,7 +81,7 @@ std::string optionKeyFormatter(const std::string& key) {
     }
 }
 
-std::string sanitizeHeader(const std::string& header) {
+std::string sanitizeHeading(const std::string& header) {
     std::string sanitized;
     for (char c : header) {
         if (std::isalnum(c) || c == '_' || c == ' ') {
@@ -92,9 +92,11 @@ std::string sanitizeHeader(const std::string& header) {
 }
 
 std::vector<std::string> escapeHeadings(const std::vector<std::string> headings) {
+    std::cout << "Escaping " << std::to_string(headings.size()) << " headings" << std::endl;
+
     std::vector<std::string> escaped = headings;
     for (int i = 0; i < headings.size(); i++) {
-        std::string h = headings[i];
+        std::string h = sanitizeHeading(headings[i]);
         if (h.find_first_of(",\"\n\r") != std::string::npos) {
             std::string escapedHeading = h;
             std::string quoted = "\"";
@@ -223,9 +225,9 @@ int main(int argc, char *argv[])
 
         // input validation for the headings
         if (result.count(OPTION_HEADINGS)) {
-            headings = escapeHeadings(split(sanitizeHeader(result[OPTION_HEADINGS].as<std::string>()), ","));
+            headings = escapeHeadings(split(result[OPTION_HEADINGS].as<std::string>(), ","));
             if (headings.size() != DIMENSION) {
-                std::cerr << "Invalid number of headings.\n";
+                std::cerr << "Invalid number of headings. Received " << headings.size() << ", expected " << DIMENSION << "\n";
                 return 1;
             }
         } else {

@@ -14,12 +14,12 @@ An excerpt from the [Wikipedia article on latin hypercube sampling](https://en.w
 ## Compilation
 
 ```bash
-g++ -I include -g -o lhc src/main.cpp
+g++ -static -I include -g -o lhc src/main.cpp
 ```
 
 ## Usage
 
-```bash
+```
   lhc [OPTION...]
 
   -n, --number arg           Required. Number of points (default: 1000)
