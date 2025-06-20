@@ -379,16 +379,16 @@ int main(int argc, char *argv[])
                 out << ",";
             }
         }
-        out << std::endl;
-        for (int i = 0; i < NUMBER_OF_POINTS; i++) {
+        for (int i = 0; i < NUMBER_OF_POINTS; i++) {        
+            out << std::endl;
             for (int j = 0; j < NUMBER_OF_DIMENSIONS; j++) {
                 out << points[i][j];
                 if (j < NUMBER_OF_DIMENSIONS - 1) {
                     out << ",";
                 }
             }
-            out << std::endl;
         }
+        out.close();
     }
 
     return 0;
