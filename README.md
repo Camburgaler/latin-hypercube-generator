@@ -36,6 +36,8 @@ g++ -static -I include -g -o lhc src/main.cpp
                              lhc.csv)
   -c, --column-headings arg  Optional. Column names for CSV output (only
                              alphanumeric and underscore characters)
+  -v, --verbose              Optional. Flag to toggle verbose console
+                             logging
   -h, --help                 Print help
 ```
 
