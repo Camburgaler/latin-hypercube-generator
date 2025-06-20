@@ -44,7 +44,7 @@ g++ -static -I include -g -o lhc src/main.cpp
 ## Example Output
 
 ```bash
-$ ./lhc -n 1000 -d 5 -r true -b 0:1000
+$ ./lhc -n 1000 -d 5 -r true -b 0:1000 -v
 ...
 713.8 730.56 925.16 903.16 546.68
 413.84 909.48 725.99 691.76 346.68
