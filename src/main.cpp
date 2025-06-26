@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     cxxopts::Options options("lhc", "Latin Hypercube generator");
 
     options.add_options()
-        (optionKeyFormatter(OPTION_NUMBER), "Required. Positive integer. Number of points", cxxopts::value<long int>())
+        (optionKeyFormatter(OPTION_NUMBER), "Required. Positive integer. Number of points", cxxopts::value<int>())
         (optionKeyFormatter(OPTION_DIMENSIONS), "Required. Positive integer. Number of dimensions", cxxopts::value<int>())
         (optionKeyFormatter(OPTION_RANDOM), "Optional. Select randomness: '" + RANDOM_FALSE + "' = none, '" + RANDOM_TRUE + "' = all, or a comma-separated list of dimension indices", cxxopts::value<std::string>()->default_value("false"))
         (optionKeyFormatter(OPTION_BASE_SCALE), "Optional. A pair of floating-point values. Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
