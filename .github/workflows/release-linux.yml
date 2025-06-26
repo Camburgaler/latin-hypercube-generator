@@ -20,7 +20,7 @@ jobs:
             - name: Build Linux binary
               run: |
                   mkdir -p build
-                  g++ -O2 -static -o build/lhc src/main.cpp  # Adjust path and files if needed
+                  g++ -I include -O2 -static -o build/lhc src/main.cpp  # Adjust path and files if needed
                   chmod +x build/lhc
 
             - name: Upload binary to release
