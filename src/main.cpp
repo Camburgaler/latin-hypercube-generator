@@ -134,14 +134,14 @@ int main(int argc, char *argv[])
     cxxopts::Options options("lhc", "Latin Hypercube generator");
 
     options.add_options()
-        (optionKeyFormatter(OPTION_NUMBER), "Required. Number of points", cxxopts::value<int>()->default_value("1000"))
-        (optionKeyFormatter(OPTION_DIMENSIONS), "Required. Number of dimensions", cxxopts::value<int>()->default_value("1"))
+        (optionKeyFormatter(OPTION_NUMBER), "Required. Positive integer. Number of points", cxxopts::value<long int>())
+        (optionKeyFormatter(OPTION_DIMENSIONS), "Required. Positive integer. Number of dimensions", cxxopts::value<int>())
         (optionKeyFormatter(OPTION_RANDOM), "Optional. Select randomness: '" + RANDOM_FALSE + "' = none, '" + RANDOM_TRUE + "' = all, or a comma-separated list of dimension indices", cxxopts::value<std::string>()->default_value("false"))
-        (optionKeyFormatter(OPTION_BASE_SCALE), "Optional. Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
+        (optionKeyFormatter(OPTION_BASE_SCALE), "Optional. A pair of floating-point values. Default scale for all dimensions in the form lower:upper", cxxopts::value<std::string>()->default_value("0:1"))
         (optionKeyFormatter(OPTION_SCALES), "Optional. Comma-separated dimension:lower:upper overrides", cxxopts::value<std::string>())
         (optionKeyFormatter(OPTION_FILE_OUTPUT), "Optional. Flag to toggle CSV file output")
         (optionKeyFormatter(OPTION_OUT_PATH), "Optional. File path for CSV output", cxxopts::value<std::string>()->default_value("lhc.csv"))
-        (optionKeyFormatter(OPTION_HEADINGS), "Optional. Column names for CSV output (only alphanumeric and underscore characters)", cxxopts::value<std::string>())
+        (optionKeyFormatter(OPTION_HEADINGS), "Optional. Column names for CSV output", cxxopts::value<std::string>())
         (optionKeyFormatter(OPTION_VERBOSE), "Optional. Flag to toggle verbose console logging")
         ("h,help", "Print help");
 
@@ -161,7 +161,17 @@ int main(int argc, char *argv[])
     int NUMBER_OF_DIMENSIONS = result[OPTION_DIMENSIONS].as<int>();
     std::vector<std::string> random = split(result[OPTION_RANDOM].as<std::string>(), ",");
     std::pair<float, float> baseScale = parseBounds(result[OPTION_BASE_SCALE].as<std::string>());
-    
+
+    if (NUMBER_OF_POINTS <= 0) {
+        throw std::invalid_argument("Number of points must be greater than 0");
+        return 1;
+    }
+
+    if (NUMBER_OF_DIMENSIONS <= 0) {
+        throw std::invalid_argument("Number of dimensions must be greater than 0");
+        return 1;
+    }
+
     float ratio[NUMBER_OF_DIMENSIONS];              // holds the scale of each dimension
     float dimensionScales[NUMBER_OF_DIMENSIONS][2]; // holds the lower and upper bounds of each dimension
     bool valid;                                     // keeps track of do-while validity
