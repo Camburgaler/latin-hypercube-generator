@@ -1,0 +1,31 @@
+name: Build and Upload Linux Binary
+
+on:
+    push:
+        tags:
+            - "*"
+
+jobs:
+    build-linux:
+        name: Build on Ubuntu
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install build tools
+              run: sudo apt update && sudo apt install -y build-essential
+
+            - name: Build Linux binary
+              run: |
+                  mkdir -p build
+                  g++ -O2 -static -o build/lhc src/main.cpp  # Adjust path and files if needed
+                  chmod +x build/lhc
+
+            - name: Upload binary to release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: build/lhc
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
