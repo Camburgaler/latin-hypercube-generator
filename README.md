@@ -22,20 +22,21 @@ g++ -static -I include -g -o lhc src/main.cpp
 ```
   lhc [OPTION...]
 
-  -n, --number arg           Required. Number of points (default: 1000)
-  -d, --dimensions arg       Required. Number of dimensions (default: 1)
+  -n, --number arg           Required. Positive integer. Number of points
+  -d, --dimensions arg       Required. Positive integer. Number of
+                             dimensions
   -r, --random arg           Optional. Select randomness: 'false' = none,
                              'true' = all, or a comma-separated list of
                              dimension indices (default: false)
-  -b, --base-scale arg       Optional. Default scale for all dimensions in
-                             the form lower:upper (default: 0:1)
+  -b, --base-scale arg       Optional. A pair of floating-point values.
+                             Default scale for all dimensions in the form
+                             lower:upper (default: 0:1)
   -s, --scales arg           Optional. Comma-separated
                              dimension:lower:upper overrides
   -f, --file-output          Optional. Flag to toggle CSV file output
   -o, --out-path arg         Optional. File path for CSV output (default:
                              lhc.csv)
-  -c, --column-headings arg  Optional. Column names for CSV output (only
-                             alphanumeric and underscore characters)
+  -c, --column-headings arg  Optional. Column names for CSV output
   -v, --verbose              Optional. Flag to toggle verbose console
                              logging
   -h, --help                 Print help
