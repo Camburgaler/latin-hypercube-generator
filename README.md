@@ -6,9 +6,10 @@ An excerpt from the [Wikipedia article on latin hypercube sampling](https://en.w
 
 ## Features
 
--   Generates LHC samples for arbitrary dimensions
--   Configurable range and floating-point inclusion
--   Basic statistical analysis (mean, variance, std. dev)
+-   Generates LHC samples
+-   Support for an arbitrary number of dimensions
+-   Configurable range for each dimension
+-   Toggleable random variance
 -   Export data to CSV
 
 ## Compilation
@@ -22,82 +23,72 @@ g++ -static -I include -g -o lhc src/main.cpp
 ```
   lhc [OPTION...]
 
-  -n, --number arg           Required. Positive integer. Number of points
-  -d, --dimensions arg       Required. Positive integer. Number of
-                             dimensions
+  -n, --number arg           Required. Positive integer. The number of
+                             points to generate.
+  -d, --dimensions arg       Required. Positive integer. The number of
+                             dimensions in each point.
   -r, --random arg           Optional. Select randomness: 'false' = none,
                              'true' = all, or a comma-separated list of
-                             dimension indices (default: false)
+                             dimension indices. This option will add a
+                             small amount of random variance to each point
+                             in each selected dimension (default: false)
   -b, --base-scale arg       Optional. A pair of floating-point values.
                              Default scale for all dimensions in the form
                              lower:upper (default: 0:1)
   -s, --scales arg           Optional. Comma-separated
                              dimension:lower:upper overrides
-  -f, --file-output          Optional. Flag to toggle CSV file output
   -o, --out-path arg         Optional. File path for CSV output (default:
                              lhc.csv)
   -c, --column-headings arg  Optional. Column names for CSV output
-  -v, --verbose              Optional. Flag to toggle verbose console
-                             logging
   -h, --help                 Print help
+
+NOTE: Please be aware that generating a large number of points (i.e. over five million) may take a long time and be resource intensive.
 ```
 
 ## Example Output
 
+### Console
+
 ```bash
-$ ./lhc -n 1000 -d 5 -r true -b 0:1000 -v
+$ ./lhc -n 1000 -d 5 -r true -f -s 0:0:1000,3:0:10,4:-1000:1000
+Generating 1000 points in 5 dimensions.
+Random selection: true
+File output path: lhc.csv
+Headings: dim0 dim1 dim2 dim3 dim4
+Base scale: 0:1
+Dimension 0 scale: 0:1000
+Dimension 3 scale: 0:10
+Dimension 4 scale: -1000:1000
+Generating points...
+Writing to lhc.csv...
+Done!
+```
+
+### CSV Excerpt
+
+```csv
+dim0,dim1,dim2,dim3,dim4
+866.32,0.83296,0.33675,3.9225,-509.06
+562.26,0.87963,0.97232,1.0555,692.00
+209.95,0.28945,0.61518,6.4720,-763.54
+185.47,0.05392,0.41277,8.6201,-306.46
+150.80,0.04556,0.46169,3.5289,-417.46
+753.36,0.85700,0.56880,0.5137,394.72
+887.80,0.49907,0.30354,4.8745,54.14
+181.29,0.99033,0.60394,5.5204,567.56
+912.32,0.67701,0.24658,7.2106,-48.10
+8.00,0.81029,0.98483,8.6182,162.24
+984.08,0.43974,0.19252,6.8308,752.72
+490.18,0.31467,0.13611,5.9179,841.76
+550.03,0.32800,0.46703,7.5362,-142.66
+914.39,0.57556,0.47453,3.4694,647.90
+111.88,0.78515,0.48942,4.0961,209.90
+200.63,0.72052,0.78757,7.1754,357.82
+468.87,0.95007,0.47064,0.1125,-479.08
+704.23,0.73242,0.32050,0.1872,-350.08
+759.44,0.17712,0.35910,4.7921,125.52
+624.04,0.06657,0.11461,6.9688,191.80
 ...
-713.8 730.56 925.16 903.16 546.68
-413.84 909.48 725.99 691.76 346.68
-780.88 236 261.83 1005.2 236.16
-774.16 640.44 759.92 575.28 250.8
-1014.96 1062 751.46 832.08 510.28
-722.48 547.24 180.57 247.6 284.56
-188.64 921.48 77.11 729.32 717.16
-129.96 873.36 451.59 185.04 397.76
-303.72 310.12 364.68 315.72 292.12
-78.16 797.68 202.49 218.76 871.6
-1057.16 549.36 321.99 503.32 902.64
-284.52 624.96 264.4 378.28 392.16
-130.16 646.84 13.59 313.08 307.64
-759.52 1077.32 1105.38 78.08 1078.6
-802.52 990.44 632.29 694.96 560.04
-1038.96 472.08 593.79 748.68 430.04
-816.04 655.64 1081.89 880.48 342.72
-460.6 920.48 207.51 1001.92 418.44
-960.88 320.2 916.8 935.12 860.6
-431.84 179.28 889.94 481.52 768.48
-565.24 101.12 156.03 618.6 1063.8
-
-Analysis of dimension 1
------------------------
-Mean: 598.487
-Variance: 5.12713e-05
-Standard Deviation: 0.0071604
-
-Analysis of dimension 2
------------------------
-Mean: 619.756
-Variance: 0.000131175
-Standard Deviation: 0.0114532
-
-Analysis of dimension 3
------------------------
-Mean: 578.979
-Variance: 4.21367e-05
-Standard Deviation: 0.00649128
-
-Analysis of dimension 4
------------------------
-Mean: 544.027
-Variance: 4.81939e-07
-Standard Deviation: 0.000694219
-
-Analysis of dimension 5
------------------------
-Mean: 606.795
-Variance: 0.000149843
-Standard Deviation: 0.012241
 ```
 
 ## Planned Improvements
